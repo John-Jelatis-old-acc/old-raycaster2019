@@ -82,7 +82,7 @@
 				255 - nearestDist
 			]).join(',') + ')';
 			let e = (cvs3d.width - 2 * numberID * this.drawWidth) / cvs3d.width,
-				p = 60 * Math.sin(e * Math.PI);
+				p = self.FOV * Math.sin(e * Math.PI);
 			ctx3d.fillRect(cvs3d.width * e, p + nearestDist, this.drawWidth * 2, cvs3d.height - nearestDist);
 		}
 		update(cam = null, walls = []) {
@@ -106,15 +106,15 @@
 					xMultThis = intersection[0] - this.pos.getX(),
 					xMultThat = intersection[0] - wall.pos.getX(),
 					confirmed = Math.round(this.pos.getY() + xMultThis * slopeThis) == Math.round(intersection[1])
-							//	Math.round(wall.pos.getY() + xMultThat * slopeThat) == Math.round(intersection[1]);
+							&& (slopeThat == Infinity || Math.round(wall.pos.getY() + xMultThat * slopeThat) == Math.round(intersection[1]));
 				let cos = Math.cos(cam.r + this.addedRot),
 					sin = Math.sin(cam.r + this.addedRot);
 				if(confirmed && (
 					(sin <= 0 && xMultThis <= 0) || (sin >= 0 && xMultThis >= 0)
 				)) {
 					let dist = self.Pythagorean.getC(
-						(x + w) - (intersection[0]),
-						(y + h) - (intersection[1])
+						(x) - (intersection[0]),
+						(y) - (intersection[1])
 					);
 					if(dist < nearestDist || nearestDist === -1) {
 						nearestDist = dist;
@@ -142,6 +142,8 @@
 		'getC': (a, b) => Math.sqrt(a ** 2 + b ** 2),
 		'getB': (a, c) => Math.sqrt(c ** 2 - a ** 2)
 	};
+	
+	self.FOV = 60;
 	
 	self.canvas2d = document.createElement('canvas');
 	self.context2d = self.canvas2d.getContext('2d');
@@ -219,7 +221,7 @@
 	self.canvas3d.width = 720;
 	self.canvas3d.height = 360;
 	
-	let p = 8;
+	let p = 16;
 	self.walls = [
 		new self.Wall(
 			p,
@@ -376,7 +378,7 @@
 	self.addEventListener('DOMContentLoaded', function() {
 		document.body.appendChild(self.canvas2d);
 		document.body.appendChild(self.canvas3d);
-		for(let n = 1/12, m = 60, r = 0; r < m; r += n) {
+		for(let n = 1/6, m = self.FOV, r = 0; r < m; r += n) {
 			self.rays.push(new self.Ray(
 				self.camera.x, self.camera.y, self.camera.r, r, m/2, 4
 			));
