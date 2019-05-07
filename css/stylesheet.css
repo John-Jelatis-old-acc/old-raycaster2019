@@ -4,8 +4,25 @@ html, body {
 	margin: 0;
 }
 canvas {
-	background-color: #CDEF;
+	background-color: #FFF6;
 	border: solid 1px #0002;
 	padding: 0;
 	margin: 0;
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 100;
+	opacity: 0.5;
+}
+canvas:hover {
+	transition-duration: 1.5s;
+	opacity: 1;
+}
+canvas + canvas {
+	background-color: #000F;
+	z-index: 10;
+	opacity: 1;
+}
+*:fullscreen {
+	background-color: #FFFF;
 }
