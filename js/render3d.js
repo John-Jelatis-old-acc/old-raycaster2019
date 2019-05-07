@@ -18,10 +18,11 @@
 		getX( ) { return this.x; }
 		getY( ) { return this.y; }
 	}, self.Wall = class {
-		constructor(x = 0, y = 0, w = 0, h = 0, tick = null) {
+		constructor(x = 0, y = 0, w = 0, h = 0, color = '#000F', tick = null) {
 			this.pos = new self.Vector(x, y);
 			this.size = new self.Vector(w, h);
 			this.tickCallback = tick;
+			this.color = color;
 		}
 		tick(walls) {
 			if(typeof this.tickCallback !== 'function')
@@ -33,7 +34,7 @@
 			this.tickCallback(this, w);
 		}
 		draw(ctx, cvs) {
-			ctx.strokeStyle = '#000F';
+			ctx.strokeStyle = this.color;
 			ctx.beginPath();
 			ctx.moveTo(this.pos.x, this.pos.y);
 			ctx.lineTo(this.pos.x + this.size.x, this.pos.y + this.size.y);
@@ -66,7 +67,7 @@
 		constructor(x = 0, y = 0, camRot = 0, addRot = 0, addRot2 = 0, n = 1) {
 			let w = (2 ** 6) - 1,
 				addedRot = (addRot - addRot2) * Math.PI / 180;
-			super(x, y, w * Math.cos(camRot + addedRot), w * Math.sin(camRot + addedRot));
+			super(x, y, w * Math.cos(camRot + addedRot), w * Math.sin(camRot + addedRot), '#CCB1');
 			this.w = w;
 			this.addedRot = addedRot;
 			this.numberID = addRot + addRot2 / 2;
@@ -77,13 +78,13 @@
 			super.draw(ctx, cvs);
 			let {nearest, nearestDist, nearestIntersection, numberID} = this;
 			ctx3d.fillStyle = 'rgb(' + ([
-				255 - nearestDist,
-				255 - nearestDist,
-				255 - nearestDist
+				340 - nearestDist + self.camera.brightness,
+				340 - nearestDist + self.camera.brightness,
+				330 - nearestDist + self.camera.brightness
 			]).join(',') + ')';
-			let e = (cvs3d.width - 2 * numberID * this.drawWidth) / cvs3d.width,
-				p = self.FOV * Math.sin(e * Math.PI);
-			ctx3d.fillRect(cvs3d.width * e, p + nearestDist, this.drawWidth * 2, cvs3d.height - nearestDist);
+			let e = (cvs3d.width + 220 - 5 * (numberID) * this.drawWidth) / cvs3d.width,
+				p = self.FOV * (2 + Math.sin(e * Math.PI));
+			ctx3d.fillRect(cvs3d.width * e, p + nearestDist, this.drawWidth * 2, cvs3d.height - nearestDist - p);
 		}
 		update(cam = null, walls = []) {
 			this.pos.setX(cam.x);
@@ -124,14 +125,15 @@
 				}
 			}, this);
 			if(nearest != null) {
-				self.context2d.fillStyle = '#0009';
-				self.context2d.fillRect(nearestIntersection[0] - 3, nearestIntersection[1] - 3, 6, 6);
 				this.size.setX(nearestIntersection[0] - x);
 				this.size.setY(nearestIntersection[1] - y);
 				this.nearest = nearest;
 				this.nearestDist = nearestDist;
 				this.nearestIntersection = nearestIntersection;
 				this.active = true;
+				this.color = 'rgba(' + (function(b) {
+					return [0xCC, 0xCC, 0xBB, (b + 125) / 250];
+				})(cam.brightness).join(', ') + ')';
 				return;
 			}
 			this.active = false;
@@ -207,8 +209,8 @@
 		self.mouseInf.wallID = null;
 	});
 	
-	self.canvas2d.width = 480;
-	self.canvas2d.height = 360;
+	self.canvas2d.width = 360;
+	self.canvas2d.height = 240;
 
 	self.canvas3d = document.createElement('canvas');
 	self.context3d = self.canvas3d.getContext('2d');
@@ -218,8 +220,8 @@
 			self.canvas3d.requestFullscreen();
 	});
 	
-	self.canvas3d.width = 720;
-	self.canvas3d.height = 360;
+	self.canvas3d.width = 1366;
+	self.canvas3d.height = 768;
 	
 	let p = 16;
 	self.walls = [
@@ -252,13 +254,15 @@
 	self.camera = {
 		'x': self.canvas2d.width / 2,
 		'y': self.canvas2d.height / 2,
-		'r': 0
+		'r': 0,
+		'brightness': -64
 	};
 	self.keys = {
 		'up': false,
 		'down': false,
 		'left': false,
-		'right': false
+		'right': false,
+		'shift': false
 	};
 	
 	self.frame = function() {
@@ -310,12 +314,20 @@
 		self.context2d.fill();
 		
 		if(self.keys.up) {
-			self.camera.x += 3 * Math.sin(self.camera.r);
-			self.camera.y += 3 * Math.cos(self.camera.r);
+			if(self.keys.shift) {
+				self.camera.brightness += 2;
+			} else {
+				self.camera.x += 3 * Math.sin(self.camera.r);
+				self.camera.y += 3 * Math.cos(self.camera.r);
+			}
 		}
 		if(self.keys.down) {
-			self.camera.x -= 3 * Math.sin(self.camera.r);
-			self.camera.y -= 3 * Math.cos(self.camera.r);
+			if(self.keys.shift) {
+				self.camera.brightness -= 2;
+			} else {
+				self.camera.x -= 3 * Math.sin(self.camera.r);
+				self.camera.y -= 3 * Math.cos(self.camera.r);
+			}
 		}
 		if(self.keys.left) {
 			self.camera.r += 0.025;
@@ -349,6 +361,9 @@
 			case 'd':
 				self.keys.right = true;
 				break;
+			case 'Shift':
+				self.keys.shift = true;
+				break;
 		}
 	});
 	self.addEventListener('keyup', function(e) {
@@ -373,12 +388,15 @@
 			case 'd':
 				self.keys.right = false;
 				break;
+			case 'Shift':
+				self.keys.shift = false;
+				break;
 		}
 	});
 	self.addEventListener('DOMContentLoaded', function() {
 		document.body.appendChild(self.canvas2d);
 		document.body.appendChild(self.canvas3d);
-		for(let n = 1/6, m = self.FOV, r = 0; r < m; r += n) {
+		for(let n = 0.125, m = self.FOV, r = 0; r < m; r += n) {
 			self.rays.push(new self.Ray(
 				self.camera.x, self.camera.y, self.camera.r, r, m/2, 4
 			));
