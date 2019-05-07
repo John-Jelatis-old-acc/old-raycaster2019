@@ -81,7 +81,9 @@
 				255 - nearestDist,
 				255 - nearestDist
 			]).join(',') + ')';
-			ctx3d.fillRect(cvs3d.width - numberID * this.drawWidth * 2, nearestDist, this.drawWidth * 2, cvs3d.height - nearestDist);
+			let e = (cvs3d.width - 2 * numberID * this.drawWidth) / cvs3d.width,
+				p = 60 * Math.sin(e * Math.PI);
+			ctx3d.fillRect(cvs3d.width * e, p + nearestDist, this.drawWidth * 2, cvs3d.height - nearestDist);
 		}
 		update(cam = null, walls = []) {
 			this.pos.setX(cam.x);
